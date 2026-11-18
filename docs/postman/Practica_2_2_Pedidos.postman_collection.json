@@ -1,0 +1,121 @@
+{
+  "info": {
+    "name": "Práctica 2.2 – Registrar pedido (DTO y JSON)",
+    "description": "POST /api/v1/laboratorio/pedidos. Antes: php artisan migrate --seed && php artisan serve. El seeder crea el usuario 1 y los productos 1 y 4.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://127.0.0.1:8000" },
+    { "key": "cliente_id", "value": "1" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// fecha_entrega debe ser hoy o posterior: se usa mañana en formato YYYY-MM-DD",
+          "const d = new Date(Date.now() + 86400000);",
+          "const pad = n => String(n).padStart(2, '0');",
+          "pm.collectionVariables.set('fecha_entrega', `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`);"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "P1 – JSON válido (201)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{base_url}}/api/v1/laboratorio/pedidos",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cliente_id\": {{cliente_id}},\n  \"metodo_pago\": \"tarjeta\",\n  \"fecha_entrega\": \"{{fecha_entrega}}\",\n  \"observacion\": \"Entregar en la tarde\",\n  \"items\": [\n    { \"producto_id\": 1, \"cantidad\": 2 },\n    { \"producto_id\": 4, \"cantidad\": 1 }\n  ]\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('201 Created', () => pm.response.to.have.status(201));",
+              "const j = pm.response.json();",
+              "pm.test('Estructura del contrato', () => {",
+              "  pm.expect(j.data).to.have.all.keys('estado','cliente_id','metodo_pago','fecha_entrega','observacion','items','total','creado_en');",
+              "  pm.expect(j.message).to.eql('Pedido validado y calculado correctamente');",
+              "});",
+              "pm.test('estado inicia en pendiente', () => pm.expect(j.data.estado).to.eql('pendiente'));",
+              "pm.test('Importes como string decimal', () => {",
+              "  pm.expect(j.data.total).to.match(/^\\d+\\.\\d{2}$/);",
+              "  j.data.items.forEach(i => { pm.expect(i.precio_unitario).to.be.a('string'); pm.expect(i.subtotal).to.be.a('string'); });",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P2 – Falta metodo_pago (422)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{base_url}}/api/v1/laboratorio/pedidos",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cliente_id\": {{cliente_id}},\n  \"fecha_entrega\": \"{{fecha_entrega}}\",\n  \"observacion\": \"Entregar en la tarde\",\n  \"items\": [\n    { \"producto_id\": 1, \"cantidad\": 2 }\n  ]\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('422 Unprocessable Entity', () => pm.response.to.have.status(422));",
+              "pm.test('errors.metodo_pago presente', () => pm.expect(pm.response.json().errors).to.have.property('metodo_pago'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P3 – Tipos incorrectos (422)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{base_url}}/api/v1/laboratorio/pedidos",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cliente_id\": \"abc\",\n  \"metodo_pago\": \"tarjeta\",\n  \"fecha_entrega\": \"{{fecha_entrega}}\",\n  \"items\": [\n    { \"producto_id\": 1, \"cantidad\": \"dos\" }\n  ]\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('422 Unprocessable Entity', () => pm.response.to.have.status(422));",
+              "const e = pm.response.json().errors;",
+              "pm.test('errors.cliente_id y errors.items.0.cantidad', () => {",
+              "  pm.expect(e).to.have.property('cliente_id');",
+              "  pm.expect(e).to.have.property('items.0.cantidad');",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

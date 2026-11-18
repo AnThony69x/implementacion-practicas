@@ -1,0 +1,414 @@
+# Roadmap y Guia Unica de Desarrollo - Backend NexoCommerce
+
+Guia de implementacion del backend a cargo de Anthony.
+
+Metodologia: **SDD (Spec-Driven Development)** y **Clean Architecture** (Dominio, Aplicacion, Infraestructura, Http).
+
+Fuente de verdad de datos: [`database/database.sql`](../database/database.sql) (25 tablas PostgreSQL).
+Contratos HTTP: [`docs/04-api/`](../docs/04-api/) version **1.1.0**.
+OpenAPI: [`docs/04-api/openapi/openapi.yaml`](../docs/04-api/openapi/openapi.yaml).
+
+Ningun endpoint se implementa si contradice el SQL o la spec correspondiente.
+
+Este backend es **API REST pura**. No hay Blade, Vite, Tailwind, sesiones web ni vistas. Web (Nathalia) y Movil (Emilio) son clientes HTTP de `/api/v1`.
+
+---
+
+## Flujo de trabajo obligatorio (cada entrega)
+
+El agente y el responsable siguen este orden. No se salta ningun paso.
+
+1. **Leer bitacora** [`docs/09-bitacora/bitacora-backend.md`](../docs/09-bitacora/bitacora-backend.md): ultimo cambio registrado.
+2. **Leer este ROADMAP**: siguiente tarea abierta `[ ]` de la fase en curso.
+3. **Leer la spec SDD** en `docs/04-api/specs/` (y el SQL si hay persistencia). Sin spec, no hay codigo.
+4. **Codificar** solo endpoints JSON bajo `/api/v1` (Clean Architecture / DDD).
+5. **Probar** unitarias e integracion hasta verde.
+6. **Marcar ROADMAP** `[x]` con fecha y hora.
+7. **Apuntar bitacora** (fecha, fase, tarea, mensaje de commit, Anthony).
+8. **Entregar a Anthony UN mensaje de commit** (Conventional Commits) para que el lo lea, ejecute y suba. El agente **no** ejecuta `git commit` ni `git push`. Un commit por entrega.
+
+---
+
+## Convenciones obligatorias
+
+* JSON = columnas SQL (`nombre_completo`, `correo`, `categoria_padre_id`, `creado_en`). Prohibido alias Laravel (`name`, `email`, `created_at`) en el envelope publico.
+* Roles: `ADMIN`, `CLIENTE`.
+* Pedido: `PENDIENTE` → `EN_PREPARACION` → `LISTO` → `ENTREGADO`.
+* Pago metodo: `PASARELA` | `TRANSFERENCIA`. Pago estado: `PENDIENTE` | `APROBADO` | `RECHAZADO`.
+* Tipo de producto (derivado 1:1): `TORTA` | `DETALLE` | `SUBLIMACION`.
+* Tokens Sanctum: tabla Laravel `personal_access_tokens` (no es una de las 25 tablas de negocio).
+* Migraciones deben reproducir el SQL (nombres, CHECK, indices parciales, seeds de `roles` y `configuracion_tienda`).
+
+---
+
+## Regla de Oro SDD (Definicion de Terminado por Modulo)
+
+Antes de marcar cualquier modulo como completado, debe cumplir con los 8 puntos:
+
+1. [ ] **Spec**: Especificacion 1.1.0 aprobada en `../docs/04-api/specs/<modulo>.spec.md`.
+2. [ ] **Migracion**: Tablas PostgreSQL del SQL (llaves, CHECK, indices) creadas y ejecutadas.
+3. [ ] **Dominio**: Entidad pura y Contrato de Repositorio (Interface) en PHP nativo sin dependencias de Laravel.
+4. [ ] **Aplicacion**: Casos de Uso de accion unica y DTOs fuertemente tipados.
+5. [ ] **Infraestructura**: Modelo Eloquent y Repositorio Eloquent (tabla SQL real, no `users`).
+6. [ ] **Http**: FormRequests y API Resources con envelope JSON.
+7. [ ] **Rutas**: Endpoints bajo `/api/v1/...` con middleware Sanctum y `VerificarRol`.
+8. [ ] **Pruebas**: Unitarias e Integracion (HTTP contra PostgreSQL) en verde.
+
+---
+
+## FASE 0: Configuracion Base e Infraestructura
+
+Estado: En progreso
+
+- [x] Inicializar proyecto Laravel 13 en `backend/` (Completado: 2026-09-07 23:15; stack verificado 2026-09-17: Laravel 13.30.1 / PHP 8.5.10)
+- [x] Estructurar capas desacopladas (`app/Dominio/`, `app/Aplicacion/`, `app/Infraestructura/`, `app/Http/`) (Completado: 2026-09-07 23:30)
+- [x] Versionar el esqueleto de capas con `.gitkeep` para que Git conserve las carpetas vacias tras un clone (Completado: 2026-09-20 18:20)
+- [x] Alinear el esqueleto: `Dominio`/`Aplicacion`/`Infraestructura` en espanol (subcarpetas incluidas) y `Http` en ingles (`Controllers`, `Requests`, `Resources`, `Middleware`) (Completado: 2026-09-20 18:26)
+- [x] Instalar y configurar `laravel/sanctum` para autenticacion API por tokens (Completado: 2026-09-07 23:30)
+- [x] Instalar y configurar `laravel/boost` con MCP para asistencia tecnica en desarrollo (Completado: 2026-09-07 23:55)
+- [x] Configurar directrices locales (`.agents/rules/`, `.agents/skills/`, `AGENTS.md`, `CLAUDE.md`) (Completado: 2026-09-08 00:05)
+- [x] Depurar y excluir del repositorio carpetas redundantes de IA generadas por Boost (Completado: 2026-09-08 00:13)
+- [x] Configurar CORS en `config/cors.php` para admitir peticiones de Frontend Web (React/Vite) y App Movil (Completado: 2026-09-08 00:26)
+- [x] Configurar excepciones globales en `bootstrap/app.php` para asegurar que todo error retorne envelope JSON (Completado: 2026-09-08 00:26)
+- [x] Eliminar capa web tradicional y configurar endpoints JSON de diagnostico y grupos v1 (Completado: 2026-09-08 00:26)
+- [x] Crear y aprobar pruebas automatizadas de integracion de configuracion API (Completado: 2026-09-08 00:26)
+- [x] Alinear contratos SDD `docs/04-api` (specs 01-12 y OpenAPI 1.1.0) con `database/database.sql` (Completado: 2026-09-13 11:30)
+- [x] Fijar flujo SDD de API REST pura: bitacora → roadmap → spec → codigo → pruebas → bitacora → un commit para Anthony (Completado: 2026-09-13 12:37)
+- [x] Configurar `.env` temporal contra PostgreSQL de Supabase (session pooler, `DB_CONNECTION=pgsql`, `DB_SSLMODE=require`). Destino final: Laptop 4 (Completado: 2026-09-20 21:08)
+- [x] Confirmar API REST pura: sin `routes/web.php`, sin Vite/Tailwind, JSON forzoso (`PrefersJsonResponses`), Sanctum stateless (Completado: 2026-09-20 21:12)
+- [ ] Configurar variables de entorno `.env` para conexion con PostgreSQL central (Laptop 4 - Melanie)
+      Temporal (desarrollo): se usa PostgreSQL de Supabase (`DB_CONNECTION=pgsql`, session pooler, `DB_SSLMODE=require`). El schema es el mismo. Cuando Melanie levante el servidor, solo cambian host, puerto, usuario y password.
+- [x] Portar `database/database.sql` a migraciones Laravel (25 tablas, indices, CHECK, seeds `ADMIN`/`CLIENTE` y tienda Dulces Aesca) (Completado: 2026-09-20 21:22)
+- [x] Desactivar/omitir migraciones default de Laravel que creen `users` como tabla de negocio (Completado: 2026-09-20 21:22)
+- [x] Crear `Dockerfile` para contenedor del backend (Completado: 2026-09-20 21:31)
+- [x] Crear `docker-compose.yml` para ejecutar las dos instancias locales (`backend-1:8001` y `backend-2:8002`) (Completado: 2026-09-20 21:31)
+- [x] Verificar conexion remota con PostgreSQL y endpoint `/up` (Completado: 2026-09-20 21:31)
+
+---
+
+## FASE 1: Autenticacion y Usuarios
+
+Estado: Completado (2026-09-22 21:10)
+Dependencias: Fase 0 (migraciones de `roles`, `usuarios`, `cuentas_oauth`, `verificaciones_correo`)
+Especificaciones:
+- [01-autenticacion.spec.md](../docs/04-api/specs/01-autenticacion.spec.md)
+- [02-usuarios.spec.md](../docs/04-api/specs/02-usuarios.spec.md)
+
+Tablas: `roles`, `usuarios`, `cuentas_oauth`, `verificaciones_correo` + Sanctum `personal_access_tokens`.
+
+### Autenticacion (`/api/v1/auth`)
+- [x] Dominio: `Usuario`, `CuentaOAuth`, `VerificacionCorreo`, `UsuarioRepositorio` (Completado: 2026-09-22 20:30)
+- [x] Aplicacion: `RegistrarCliente`, `IniciarSesion`, `CerrarSesion`, `ObtenerPerfil`, `VerificarCorreo`, `ReenviarVerificacion`, `AutenticarOAuth` (Completado: 2026-09-22 20:30)
+- [x] Infraestructura: modelos Eloquent sobre `usuarios` (no `users`) (Completado: 2026-09-22 20:30)
+- [x] Reglas: 5 intentos → `bloqueado_hasta` 15 min (429); registro con rol `CLIENTE`; `terminos_aceptados`; OAuth solo `GOOGLE` (Completado: 2026-09-22 20:30; Facebook retirado 2026-09-23)
+- [x] Infraestructura correo: `NotificacionServiceInterface` + Mailtrap; codigo de verificacion enviado en registro y reenvio (Completado: 2026-09-22)
+- [x] Http:
+  - `POST /api/v1/auth/registro`
+  - `POST /api/v1/auth/login` (campo `correo`, no `email`)
+  - `POST /api/v1/auth/logout`
+  - `GET /api/v1/auth/perfil`
+  - `POST /api/v1/auth/verificar-correo`
+  - `POST /api/v1/auth/reenviar-verificacion`
+  - `POST /api/v1/auth/oauth`
+  (Completado: 2026-09-22 20:45)
+- [x] Pruebas: correo duplicado 422, login 401, bloqueo 429, OAuth proveedor invalido 422 (Completado: 2026-09-22 21:05 — 45/45 verde)
+
+### Usuarios y roles (`/api/v1/usuarios`)
+- [x] Middleware `VerificarRol` (`ADMIN` | `CLIENTE`) (Completado: 2026-09-22 20:45)
+- [x] Http:
+  - `GET /api/v1/admin/usuarios` (filtros `rol`, `buscar`, `activo`)
+  - `PATCH /api/v1/admin/usuarios/{id}` (rol/activo; no eliminar el ultimo ADMIN)
+  - `PUT /api/v1/usuarios/perfil` (`nombre_completo`, `telefono`)
+  - `PUT /api/v1/usuarios/cambiar-password`
+  (Completado: 2026-09-22 20:45)
+- [x] Pruebas: CLIENTE en ruta admin → 403 (Completado: 2026-09-22 21:05 — 45/45 verde)
+
+---
+
+## FASE 2: Multimedia
+
+Estado: Completado (2026-09-23 21:35)
+Dependencias: Fase 1
+Especificacion: [08-multimedia.spec.md](../docs/04-api/specs/08-multimedia.spec.md)
+
+Tablas: `multimedia`.
+Nota: se implementa antes del catalogo porque categorias, productos, diseños y comprobantes usan `multimedia.id`.
+
+- [x] Cliente de almacenamiento local en `Infraestructura/Almacenamiento/` mediante puerto intercambiable con SFTP futuro (Completado: 2026-09-23 21:35)
+- [x] Aplicacion: `SubirArchivoMultimedia`, `ObtenerMultimedia`, `DesactivarMultimedia` (Completado: 2026-09-23 21:35)
+- [x] Http:
+  - `POST /api/v1/multimedia` (multipart; respuesta **con `id`**)
+  - `GET /api/v1/multimedia/{id}`
+  - `DELETE /api/v1/multimedia/{id}` (`activo = false`)
+  (Completado: 2026-09-23 21:35)
+- [x] Validaciones: mimes jpeg/png/jpg/webp/pdf, max 5120 KB, `destino` in productos, comprobantes, personalizaciones, tienda, categorias, publicaciones, disenos (Completado: 2026-09-23 21:35)
+- [x] Pruebas: rechazo >5MB, persistencia de `subido_por_id`, JSON con `tamano_bytes` y `tipo_mime`; 12/12 Multimedia y 57/57 suite completa (Completado: 2026-09-23 21:35)
+
+---
+
+## FASE 3: Tienda (configuracion_tienda)
+
+Estado: Completado (2026-09-23 21:48)
+Dependencias: Fase 1
+Especificacion: [09-tiendas.spec.md](../docs/04-api/specs/09-tiendas.spec.md)
+
+Tablas: `configuracion_tienda` (seed Dulces Aesca y colores). No hay `lema`, `tipo_negocio` ni moneda.
+
+- [x] Dominio: `ConfiguracionTienda`, `ConfiguracionTiendaRepositorio` (Completado: 2026-09-23 21:48)
+- [x] Aplicacion: `ObtenerConfiguracionTienda`, `ActualizarConfiguracionTienda` (Completado: 2026-09-23 21:48)
+- [x] Http:
+  - `GET /api/v1/tienda/configuracion` (publico)
+  - `PUT /api/v1/admin/tienda/configuracion` (ADMIN; `nombre_tienda`, colores, `logo_url`, `favicon_url`, contacto)
+  (Completado: 2026-09-23 21:48)
+- [x] Pruebas: GET publico; CLIENTE en PUT → 403; PUT sin `color_primario` → 422 (Completado: 2026-09-23 21:48)
+
+---
+
+## FASE 4: Categorias
+
+Estado: Completado (2026-09-23 22:14)
+Dependencias: Fase 1, Fase 2 (si se asocia `imagen_id`)
+Especificacion: [03-categorias.spec.md](../docs/04-api/specs/03-categorias.spec.md)
+
+Tablas: `categorias` (`categoria_padre_id`, UNIQUE por padre, indice parcial de raiz). Sin `slug` ni `parent_id`.
+
+- [x] Dominio: `Categoria`, `CategoriaRepositorio` (Completado: 2026-09-23 22:14)
+- [x] Aplicacion: `ListarArbolCategorias`, `CrearCategoria`, `ActualizarCategoria`, `DesactivarCategoria` (Completado: 2026-09-23 22:14)
+- [x] Http:
+  - `GET /api/v1/categorias`
+  - `POST /api/v1/admin/categorias`
+  - `PUT /api/v1/admin/categorias/{id}`
+  - `DELETE /api/v1/admin/categorias/{id}` (`activo = false`; 400 si tiene productos activos)
+  (Completado: 2026-09-23 22:14)
+- [x] Pruebas: arbol con `categoria_padre_id`; nombre de raiz duplicado 422 (Completado: 2026-09-23 22:14 — 89/89 suite completa)
+
+---
+
+## FASE 5: Productos y personalizacion
+
+Estado: Completado (2026-09-23 22:50)
+Dependencias: Fase 4
+Especificacion: [04-productos.spec.md](../docs/04-api/specs/04-productos.spec.md)
+
+Tablas: `productos`, `tortas`, `detalles`, `sublimaciones`, `disenos_torta`, `plantillas_diseno`, `disenos_personalizados`, `producto_multimedia`.
+
+No existen `opciones_personalizacion`, `valores_personalizacion`, `slug` ni `stock` en `productos`. Stock solo en `detalles`.
+
+- [x] Dominio: `Producto` (tipo derivado), `Torta`, `Detalle`, `Sublimacion`, `DisenoTorta`, `PlantillaDiseno`, `DisenoPersonalizado` (Completado: 2026-09-23 22:50)
+- [x] Aplicacion: catalogo, CRUD de productos, diseños y plantillas, y diseños personalizados por cliente (Completado: 2026-09-23 22:50)
+- [x] Transaccion de alta: `productos` + exactamente una tabla 1:1 + `producto_multimedia` (una sola `es_principal`) (Completado: 2026-09-23 22:50)
+- [x] Http:
+  - `GET /api/v1/productos` (filtros `categoria_id`, `tipo`, `buscar`, precios, `porciones_*`, `sabor`)
+  - `GET /api/v1/productos/{id}`
+  - `POST /api/v1/admin/productos`
+  - `PUT /api/v1/admin/productos/{id}` (tipo inmutable)
+  - `DELETE /api/v1/admin/productos/{id}`
+  - `POST /api/v1/admin/tortas/{producto_id}/disenos`
+  - `PUT|DELETE /api/v1/admin/disenos-torta/{id}`
+  - `POST /api/v1/admin/sublimaciones/{producto_id}/plantillas`
+  - `PUT|DELETE /api/v1/admin/plantillas-diseno/{id}`
+  - `GET|POST /api/v1/disenos-personalizados` (CLIENTE)
+  (Completado: 2026-09-23 22:50)
+- [x] Pruebas: filtros, paginacion, transacciones, roles, ciclo de sublimacion, aislamiento por cliente, TORTA sin `sabor` 422, dos imagenes principales 422 y JSON sin campos inexistentes; suite completa 103/103 (Completado: 2026-09-23 22:50)
+
+---
+
+## FASE 6: Publicaciones
+
+Estado: Completado (2026-09-23 23:24)
+Dependencias: Fase 2, Fase 4
+Especificacion: [11-publicaciones.spec.md](../docs/04-api/specs/11-publicaciones.spec.md)
+
+Tablas: `publicaciones`, `publicacion_multimedia`.
+
+- [x] Dominio: `Publicacion`, imagenes ordenadas y repositorio (Completado: 2026-09-23 23:24)
+- [x] Aplicacion: `ListarPublicaciones`, `ConsultarPublicacion`, `CrearPublicacion`, `ActualizarPublicacion`, `DesactivarPublicacion` (Completado: 2026-09-23 23:24)
+- [x] Http:
+  - `GET /api/v1/publicaciones` (publico solo activas; ADMIN incluye inactivas)
+  - `GET /api/v1/publicaciones/{id}`
+  - `POST /api/v1/admin/publicaciones`
+  - `PUT /api/v1/admin/publicaciones/{id}`
+  - `DELETE /api/v1/admin/publicaciones/{id}`
+  (Completado: 2026-09-23 23:24)
+- [x] Pruebas: filtros, paginacion, imagenes, autenticacion opcional ADMIN, transacciones, categoria y producto opcionales; CLIENTE en POST admin → 403; suite completa 113/113 (Completado: 2026-09-23 23:24)
+
+---
+
+## FASE 7: Produccion
+
+Estado: Completado (2026-09-24 00:12)
+Dependencias: Fase 4
+Especificacion: [12-produccion.spec.md](../docs/04-api/specs/12-produccion.spec.md)
+
+Tablas: `configuracion_produccion`. Se usa al crear pedidos (Fase 9).
+
+- [x] Dominio: `ConfiguracionProduccion`, calculo de `ocupado` / `disponible` y reglas global/especifica (Completado: 2026-09-24 00:12)
+- [x] Aplicacion: `ListarCupos`, `ConsultarDisponibilidad`, `CrearCupo`, `ActualizarCupo`, `DesactivarCupo`, `VerificarCapacidadProduccion` (Completado: 2026-09-24 00:12)
+- [x] Http:
+  - `GET /api/v1/produccion/disponibilidad?fecha=`
+  - `GET|POST /api/v1/admin/produccion`
+  - `PUT|DELETE /api/v1/admin/produccion/{id}`
+  (Completado: 2026-09-24 00:12)
+- [x] Pruebas: calculo desde pedidos no entregados, cupos global/especifico, ausencia de cupo para TORTA, duplicados activos, `capacidad_maxima < 1` → 422 y CLIENTE no crea cupos; suite completa 125/125 (Completado: 2026-09-24 00:12)
+
+---
+
+## FASE 8: Carrito
+
+Estado: Completado (2026-09-24 10:55)
+Dependencias: Fase 5
+Especificacion: [05-carrito.spec.md](../docs/04-api/specs/05-carrito.spec.md)
+
+Tablas: `carritos`, `detalles_carrito`. Un carrito activo por usuario (indice parcial). A lo sumo una FK: `diseno_torta_id` XOR `plantilla_diseno_id` XOR `diseno_personalizado_id`.
+
+- [x] Dominio: `Carrito`, `DetalleCarrito`; precio calculado (`precio_base` + `costo_adicional`); el cliente no envia precio
+- [x] Aplicacion: `ObtenerCarrito`, `AgregarItem`, `ActualizarCantidad`, `EliminarItem`, `VaciarCarrito`
+- [x] Compatibilidad: TORTA → diseño de torta opcional; SUBLIMACION → plantilla o diseño personalizado (exactamente uno); DETALLE → sin diseño + stock
+- [x] Http:
+  - `GET /api/v1/carrito`
+  - `POST /api/v1/carrito/items`
+  - `PUT /api/v1/carrito/items/{id}`
+  - `DELETE /api/v1/carrito/items/{id}`
+  - `DELETE /api/v1/carrito`
+- [x] Pruebas: cantidad > stock DETALLE → 400; dos FKs de diseño → 422; SUBLIMACION sin configuracion → 400; precio vigente, avisos, fusion, aislamiento y rollback. Pint y suite completa: 133/133 pruebas, 716 aserciones (Completado: 2026-09-24 10:55)
+
+---
+
+## FASE 9: Pedidos
+
+Estado: Completado (2026-09-24 11:50)
+Dependencias: Fase 7, Fase 8
+Especificacion: [06-pedidos.spec.md](../docs/04-api/specs/06-pedidos.spec.md)
+
+Tablas: `pedidos`, `detalles_pedido`. Sin `direccion_envio`, `codigo`, `notas` ni `metodo_pago` en el pedido.
+
+Maquina de estados: `PENDIENTE` → `EN_PREPARACION` → `LISTO` → `ENTREGADO` (sin saltos). No existen `pagado`, `enviado` ni `cancelado`.
+
+- [x] Dominio: `Pedido`, invariantes de secuencia y snapshot (`nombre_producto`, `costo_diseno`, `tipo_configuracion`)
+- [x] Aplicacion: `CrearPedidoDesdeCarrito`, `ListarPedidosUsuario`, `ConsultarPedido`, `ListarPedidosAdmin`, `CambiarEstadoPedido`
+- [x] Transaccion:
+  1. Revalidar precio, disponibilidad, configuracion y stock agregado de DETALLE.
+  2. Revalidar capacidad (Fase 7) para `fecha_entrega`.
+  3. Insertar `pedidos` estado `PENDIENTE` y `detalles_pedido`.
+  4. Descontar stock de DETALLE y vaciar `detalles_carrito`.
+- [x] No avanzar a `EN_PREPARACION` sin pago `APROBADO` (Fase 10).
+- [x] Http:
+  - `POST /api/v1/pedidos` body `{ "fecha_entrega": "YYYY-MM-DD", "total_esperado": "35.00" }`
+  - `GET /api/v1/pedidos`
+  - `GET /api/v1/pedidos/{id}`
+  - `GET /api/v1/admin/pedidos`
+  - `PATCH /api/v1/admin/pedidos/{id}/estado`
+- [x] Pruebas: validaciones 422, precio reconfirmado, snapshot, stock y capacidad bajo concurrencia, aislamiento, paginacion y secuencia de estados; Pint y suite PostgreSQL 17 local: 147/147 pruebas, 837 aserciones (Completado: 2026-09-24 11:50)
+
+---
+
+## FASE 10: Pagos y comprobantes
+
+Estado: Completado (2026-09-26 10:38)
+Dependencias: Fase 2, Fase 9
+Especificacion: [07-pagos.spec.md](../docs/04-api/specs/07-pagos.spec.md)
+
+Tablas: `pagos`, `comprobantes_pago`. No hay `comprobante_url` ni metodos `efectivo`/`tarjeta`.
+
+- [x] Dominio: `Pago`, `ComprobantePago`; `monto` = `pedidos.total`
+- [x] Aplicacion: `RegistrarPago`, `ConsultarPagoPedido`, `VerificarPagoAdmin`
+- [x] TRANSFERENCIA: exige `multimedia_id` e inserta `comprobantes_pago`. PASARELA: `referencia_pasarela`.
+- [x] Aprobar pago **no** cambia `pedidos.estado` a un valor inexistente; deja `PENDIENTE` y habilita Fase 9.
+- [x] Http:
+  - `POST /api/v1/pagos`
+  - `GET /api/v1/pedidos/{pedido_id}/pago`
+  - `PATCH /api/v1/admin/pagos/{id}/verificar` (`APROBADO` | `RECHAZADO`)
+- [x] Pruebas: metodos invalidos 422, comprobante propio y activo, monto exacto, reintento tras rechazo, verificacion terminal y registros concurrentes; Pint y suite PostgreSQL 17 local: 157/157 pruebas, 923 aserciones (Completado: 2026-09-26 10:38)
+
+---
+
+## FASE 11: Notificaciones
+
+Estado: Completada (2026-09-26 10:49)
+Dependencias: Fase 9, Fase 10
+Especificacion: [10-notificaciones.spec.md](../docs/04-api/specs/10-notificaciones.spec.md)
+
+Tablas: `notificaciones` (`pedido_id`, `pago_id`; no `referencia_id`).
+
+Tipos: `PEDIDO_CREADO`, `PEDIDO_EN_PREPARACION`, `PEDIDO_LISTO`, `PEDIDO_ENTREGADO`, `PAGO_REGISTRADO`, `PAGO_APROBADO`, `PAGO_RECHAZADO`.
+
+- [x] Dominio: eventos `PedidoCreado`, `PagoRegistrado`, `PagoVerificado`, `EstadoPedidoCambiado`
+- [x] Listeners sincronos y transaccionales que insertan filas para CLIENTE y ADMIN segun spec
+- [x] Http:
+  - `GET /api/v1/notificaciones` (`meta.total_no_leidas`)
+  - `PATCH /api/v1/notificaciones/{id}/leida`
+  - `PATCH /api/v1/notificaciones/leer-todas`
+- [x] Pruebas: siete tipos, destinatarios, autorizacion, filtros, paginacion, lectura idempotente y rollback; Pint y suite PostgreSQL 17 local: 163/163 pruebas, 993 aserciones (Completado: 2026-09-26 10:49)
+
+---
+
+## FASE 12: Pruebas de carga, balanceo y despliegue
+
+Estado: Pendiente
+Dependencias: Todas las anteriores
+
+- [x] Empaquetar backend en contenedor `Dockerfile` con extensiones PHP (`pdo_pgsql`, etc.); imagen actual construida y probada localmente (2026-09-26 11:07)
+- [x] `docker-compose.yml`: `backend-1:8001` y `backend-2:8002`; configuracion validada y volumen multimedia compartido probado con dos instancias aisladas (2026-09-26 11:07)
+- [x] Preparar integracion directa por LAN: URL publica y CORS configurables, rutas publicas/privadas de archivos, seeder opcional en BD aislada y guia para Nathalia/Emilio. Pint y suite PostgreSQL 17 local: 170/170 pruebas, 1038 aserciones (2026-09-26 11:07)
+- [ ] Comprobar acceso real desde las computadoras de Nathalia y Emilio a la API y la configuracion de origen web
+- [ ] Coordinar con Michael (Laptop 1 - NGINX) upstream Round-Robin
+- [ ] Coordinar con Melanie (Laptop 4 - PostgreSQL) conexion remota de ambas instancias
+- [ ] Coordinar con Emilio (Laptop 5) rutas publicas de `multimedia.ruta_archivo`
+- [ ] Resiliencia: detener `backend-1` y comprobar failover a `backend-2`
+- [ ] Concurrencia Web + Movil contra el envelope JSON 1.1.0
+
+---
+
+## FASE 13: Alineacion con esquema v4.3.2 y almacenamiento SFTP
+
+Estado: En progreso
+Dependencias: Fase 12. Guia: `../docs/04-api/plan-alineacion-backend.md`
+
+- [x] Preparar BD de prueba aislada PostgreSQL 17 (`127.0.0.1:55432`, contenedor `nexo-test-db`) con `database/instalar.sql` y rol `nexo_backend` (Completado: 2026-10-18)
+- [x] Linea base: suite actual contra BD vacia `nexo_baseline`: 171 pruebas, 170 pasan, 1 omitida, 1028 aserciones (Completado: 2026-10-18)
+- [x] Migraciones: retiradas las 4 migraciones de negocio (`personal_access_tokens`, `nexocommerce_tables`, `oauth_solo_google`, `add_clave_to_configuracion_tienda`) y las 3 tecnicas de Laravel (`users`/`password_reset_tokens`/`sessions`, `cache`, `jobs`): la API no usa colas, cache ni sesiones en base de datos. El esquema de negocio lo crean 19 migraciones `0001_01_02_000001` a `000019` (una por modulo de `backend/database/schemas/`, en el orden de `instalar.sql`; cada una ejecuta su SQL tal cual) (camino A). El camino B es el instalador de Melanie (`database/instalar.sql`); son excluyentes. Procedimiento en `docs/04-api/plan-alineacion-backend.md`, seccion Instalacion. Verificado en PostgreSQL 17.11 (version objetivo) el 2026-10-19: `migrate` solo crea 47 tablas de negocio (48 con `migrations`); GRANT a `nexo_backend`; suite administrativa 172 de 173 (1 omitida), suite `nexo_backend` 171 de 172 (1 omitida), concurrentes 4 de 4. Permisos verificados con `backend/tests/Sql/permisos_nexo_backend.sql` (9 de 9 rechazadas)
+- [x] Modelos Eloquent con schema (23 modelos, `$table` = `schema.tabla`) (Completado: 2026-10-18)
+- [x] Pruebas con esquema real: `DatabaseTransactions` sobre BD cargada con `instalar.sql` en lugar de `RefreshDatabase` (Completado: 2026-10-18). La BD de prueba debe recrearse antes de cada corrida: las pruebas concurrentes confirman datos
+- [x] Consultas, joins y reglas de validacion con schema: `ExisteEnTabla` y `UnicoEnTabla`, porque la regla `exists`/`unique` de Laravel interpreta el punto como conexion (Completado: 2026-10-18)
+- [x] Tokens Sanctum sobre `auth.personal_access_tokens` mediante `TokenAccesoModelo` (Completado: 2026-10-18)
+- [x] Seeder de roles por `nombre`, sin fijar `id` (identidad generada) (Completado: 2026-10-18)
+- [x] Productos: `tipo` persistido y coherente con la subtabla mediante FK compuesta; fabricas y pruebas con su tipo (Completado: 2026-10-18)
+- [x] Autenticacion: `verificaciones_correo` guarda `codigo_hash` (HMAC-SHA256 con `app.key`); la API no cambia (Completado: 2026-10-18)
+- [x] Tienda: `logo_id`/`favicon_id` con `media.multimedia`; la API conserva `logo_url`/`favicon_url` (URL calculada desde el archivo y validacion de que el archivo exista); `clave` retirada; seeder por `activo` (Completado: 2026-10-18)
+- [x] Diseños personalizados: se guardan con `producto_id`, `tipo_producto` SUBLIMACION, `estado_cotizacion` NO_REQUIERE y costo fijo de la sublimacion; la API conserva `sublimacion_id` (Completado: 2026-10-18)
+- [x] Publicaciones: la API conserva `activo`; internamente `estado` PUBLICADA/ARCHIVADA y `publicada_en`; orden de imagenes 0-based en la API y 1-based en BD (maximo 9 en la API) (Completado: 2026-10-18)
+- [x] Demo: productos con `tipo`, diseños y plantillas con imagen; seeder con helper de imagen de demo (Completado: 2026-10-18)
+- [x] Pedidos de produccion en pruebas: se crean PENDIENTE y avanzan con pago aprobado y transiciones validas (Completado: 2026-10-18)
+- [x] Suite con esquema real: 171 de 171 pasan (2026-10-18) en dos corridas. Principal: `--exclude-group concurrente` con base nueva. Concurrentes (`#[Group('concurrente')]`): base nueva propia. Las pruebas concurrentes no limpian porque el esquema impide borrar pagos y pedidos
+- [x] Publicaciones: la API conserva `activo`; internamente `estado` PUBLICADA/ARCHIVADA y `publicada_en`; orden 0-based en la API y 1-based en BD (maximo 9 en la API) (Completado: 2026-10-18)
+- [x] Tienda: `logo_id`/`favicon_id` con `media.multimedia`; la API conserva `logo_url`/`favicon_url` (archivo validado y URL calculada); `clave` retirada (Completado: 2026-10-18)
+- [x] Pedidos: campos de entrega, estado `CANCELADO` (restituye stock), `descuento`/`costo_envio` en 0, `catalogo.descontar_stock`, datos de entrega en el detalle; contrato `docs/04-api` spec 06 v1.2.0 y OpenAPI 1.2.0 (cambio de contrato). Verificado 2026-10-18 en PostgreSQL 17 local desechable con `instalar.sql`; la prueba `test_entrega_domicilio_exige_direccion_y_cancelar_restaura_stock` pasa. Incluye correccion: `CrearAvisos` no tenia titulo para `CANCELADO` (500 al cancelar)
+- [x] Productos: `tipo` persistido y coherente con la subtabla; diseños personalizados con `producto_id`/`tipo_producto` y costo fijo de sublimacion; imagen obligatoria en diseños de torta y plantillas (Completado: 2026-10-18)
+- [x] Pagos, multimedia y notificaciones: multimedia `modulo`/`checksum_sha256` persistidos y probados. Pagos (`moneda`) y notificaciones (`canal`, `estado_envio`, `intentos_envio`) usan los defaults del esquema; decision: no se setean explicitamente (Completado: 2026-10-18)
+- [x] Auditoria: `ContextoAuditoria` aplica `set_config` (`app.usuario_id`, `app.ip_origen`, `app.origen`, `app.solicitud_id`) en cada transaccion iniciada y en la autenticacion Sanctum; prueba de alta de categoria auditada (Completado: 2026-10-18)
+- [x] Instalar `league/flysystem-sftp-v3` (aprobado por el usuario el 2026-10-18; instalado 3.36.0 con phpseclib 3.0.57) (Completado: 2026-10-18)
+- [x] Disco `multimedia_sftp` y `SftpAlmacenamientoArchivos` con errores controlados 503 `MUL_ALMACENAMIENTO_NO_DISPONIBLE`; binding por `MULTIMEDIA_DISK` (por defecto local); sin `MULTIMEDIA_SFTP_HOST_FINGERPRINT` no arranca el adaptador; prueba con servidor inaccesible (Completado: 2026-10-18)
+- [~] Variables `MULTIMEDIA_SFTP_*` en `docker-compose.yml` (hecho 2026-10-18). Pendiente: `.env` local (no accesible desde el agente), clave privada como secreto y huella del host real
+- [~] Limites de subida: PHP en la imagen Docker (`upload_max_filesize=6M`, `post_max_size=8M`) hecho 2026-10-18. Pendiente: `client_max_body_size` de NGINX (carpeta `nginx/`, fuera del alcance acordado)
+- [x] Borrar el archivo remoto si falla el INSERT en `SubirArchivoMultimedia` (Completado: 2026-10-18; prueba unitaria)
+- [x] Pruebas contra el esquema real: `database/tests/reglas.sql` ejecutado en BD nueva con rollback, sin errores (Completado: 2026-10-18). Pendiente: casos de rechazo de `nexo_backend` en la BD de la VM
+- [ ] Prueba end-to-end contra file-server `100.88.4.113` (siete pasos de la guia)
+- [ ] Avisar a Nathalia y Emilio de los cambios de contrato antes de fusionar
+
+---
+
+## Mapa rapido spec → fase
+
+| Spec | Fase |
+| :--- | :--- |
+| 01, 02 Autenticacion / Usuarios | 1 |
+| 08 Multimedia | 2 |
+| 09 Tienda | 3 |
+| 03 Categorias | 4 |
+| 04 Productos | 5 |
+| 11 Publicaciones | 6 |
+| 12 Produccion | 7 |
+| 05 Carrito | 8 |
+| 06 Pedidos | 9 |
+| 07 Pagos | 10 |
+| 10 Notificaciones | 11 |

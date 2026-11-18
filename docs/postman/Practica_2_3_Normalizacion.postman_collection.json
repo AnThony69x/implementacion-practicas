@@ -1,0 +1,329 @@
+{
+  "info": {
+    "name": "Practica 2.3 - Traduccion y normalizacion",
+    "description": "Origen A (formulario) y B (servicio externo) -> contrato común. Requiere: php artisan serve --port=8000",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000"
+    }
+  ],
+  "item": [
+    {
+      "name": "P1 - Origen A (formulario) valido",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Código 200', () => pm.response.to.have.status(200));",
+              "const j = pm.response.json();",
+              "pm.test('Contrato común correcto', () => pm.expect(j.data).to.eql({cliente_id:1, metodo_pago:'tarjeta', fecha_entrega:'2026-11-20', items:[{producto_id:3, cantidad:2}]}));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "200 con el contrato común.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"clienteId\": \"1\",\n  \"metodoPago\": \"Tarjeta\",\n  \"fechaEntrega\": \"20/11/2026\",\n  \"detalle\": [\n    {\n      \"productoId\": \"3\",\n      \"cantidad\": \"2\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/laboratorio/normalizar/pedido/formulario",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "laboratorio",
+            "normalizar",
+            "pedido",
+            "formulario"
+          ]
+        }
+      }
+    },
+    {
+      "name": "P2 - Origen B (servicio externo) equivalente",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Código 200', () => pm.response.to.have.status(200));",
+              "const j = pm.response.json();",
+              "pm.test('Contrato común correcto', () => pm.expect(j.data).to.eql({cliente_id:1, metodo_pago:'tarjeta', fecha_entrega:'2026-11-20', items:[{producto_id:3, cantidad:2}]}));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "200 con el mismo contrato que P1.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"customer\": {\n    \"id\": 1\n  },\n  \"payment\": \"CARD\",\n  \"delivery_date\": \"2026-11-20\",\n  \"lines\": [\n    {\n      \"product_id\": 3,\n      \"qty\": 2\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/laboratorio/normalizar/pedido/externo",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "laboratorio",
+            "normalizar",
+            "pedido",
+            "externo"
+          ]
+        }
+      }
+    },
+    {
+      "name": "P3 - Cantidad invalida (2.5)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Código 422', () => pm.response.to.have.status(422));",
+              "pm.test('Error explícito', () => pm.expect(pm.response.json().message).to.include(\"cantidad\"));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "422 con mensaje explícito.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"clienteId\": \"1\",\n  \"metodoPago\": \"Tarjeta\",\n  \"fechaEntrega\": \"20/11/2026\",\n  \"detalle\": [\n    {\n      \"productoId\": \"3\",\n      \"cantidad\": \"2.5\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/laboratorio/normalizar/pedido/formulario",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "laboratorio",
+            "normalizar",
+            "pedido",
+            "formulario"
+          ]
+        }
+      }
+    },
+    {
+      "name": "P3b - Campo faltante (clienteId)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Código 422', () => pm.response.to.have.status(422));",
+              "pm.test('Error explícito', () => pm.expect(pm.response.json().message).to.include(\"clienteId\"));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "422: falta campo requerido.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"metodoPago\": \"Tarjeta\",\n  \"fechaEntrega\": \"20/11/2026\",\n  \"detalle\": [\n    {\n      \"productoId\": \"3\",\n      \"cantidad\": \"2\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/laboratorio/normalizar/pedido/formulario",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "laboratorio",
+            "normalizar",
+            "pedido",
+            "formulario"
+          ]
+        }
+      }
+    },
+    {
+      "name": "P3c - Fecha inexistente (31/02/2026)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Código 422', () => pm.response.to.have.status(422));",
+              "pm.test('Error explícito', () => pm.expect(pm.response.json().message).to.include(\"fechaEntrega\"));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "422: fecha inválida.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"clienteId\": \"1\",\n  \"metodoPago\": \"Tarjeta\",\n  \"fechaEntrega\": \"31/02/2026\",\n  \"detalle\": [\n    {\n      \"productoId\": \"3\",\n      \"cantidad\": \"2\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/laboratorio/normalizar/pedido/formulario",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "laboratorio",
+            "normalizar",
+            "pedido",
+            "formulario"
+          ]
+        }
+      }
+    },
+    {
+      "name": "P3d - Pago invalido en origen B (BITCOIN)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Código 422', () => pm.response.to.have.status(422));",
+              "pm.test('Error explícito', () => pm.expect(pm.response.json().message).to.include(\"payment\"));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "422: código de pago desconocido.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"customer\": {\n    \"id\": 1\n  },\n  \"payment\": \"BITCOIN\",\n  \"delivery_date\": \"2026-11-20\",\n  \"lines\": [\n    {\n      \"product_id\": 3,\n      \"qty\": 2\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/laboratorio/normalizar/pedido/externo",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "laboratorio",
+            "normalizar",
+            "pedido",
+            "externo"
+          ]
+        }
+      }
+    }
+  ]
+}
