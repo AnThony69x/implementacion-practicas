@@ -79,7 +79,7 @@ Probar el endpoint: importar la colección de Postman (ver [sección 6](#postman
 | Servicio de usuarios | `backend/laboratorio/servicios/usuarios.php` | Puerto 8001, `/usuarios/{id}` |
 | Servicio de estados | `backend/laboratorio/servicios/estados.php` | Puerto 8002, `/estados/{id}` |
 | Configuración | `backend/config/orquestador.php` + `.env` | URLs de los servicios y timeout (3 s) |
-| Orquestador | `backend/app/Http/Controllers/Laboratorio/OrquestadorController.php` | `GET /api/v1/laboratorio/resumen-solicitud/{id}` |
+| Orquestador | `backend/app/Http/Controllers/Laboratorio/OrquestadorController.php` | `GET /api/resumen-solicitud/{id}` |
 | Documento | `docs/Practica_3_3_Orquestacion_Anthony_Mejia.docx` | Capturas de Postman y diagrama |
 
 ### Resto del proyecto (de prácticas anteriores)
@@ -122,7 +122,7 @@ practica/
 |---|---|---|---|
 | `POST` | `/api/v1/laboratorio/pedidos` | **Real** (Práctica 2.2) | Registra un pedido en la BD |
 | `POST` | `/api/v1/laboratorio/normalizar/pedido/{formulario\|externo}` | **Real** (Práctica 2.3) | Devuelve el pedido en el contrato común (200) o error (422); no usa BD |
-| `GET` | `/api/v1/laboratorio/resumen-solicitud/{id}` | **Real** (Práctica 3.3) | Orquestador: usuario + estado + `correlation_id` (200) o 502 |
+| `GET` | `/api/resumen-solicitud/{id}` | **Real** (Práctica 3.3) | Orquestador: usuario + estado + `correlation_id` (200) o 502 |
 | `GET` | `/api/estado` | Ejemplo | Estado de la API |
 | `GET` | `/api/productos`, `/api/productos/{id}` | Ejemplo | Datos fijos, sin BD |
 | `GET` | `/api/categorias`, `/api/categorias/{id}` | Ejemplo | Datos fijos, sin BD |
@@ -291,25 +291,26 @@ Un dato inválido o faltante responde `422 {"mensaje": "..."}`. Pruebas: `php ar
 ```text
 Cliente ─► Orquestador :8000 ─► Servicio usuarios :8001  (/usuarios/7)
                           └───► Servicio estados  :8002  (/estados/101)
-Cliente ◄─ {solicitud_id, usuario, estado, correlation_id}
+Cliente ◄─ {success, data:{solicitud_id, usuario, estado, correlation_id}}
 ```
 
 Los servicios son scripts PHP independientes; sus URLs están en `.env` (`USUARIOS_URL`, `ESTADOS_URL`) y se
 leen desde `backend/config/orquestador.php`. Levantar tres terminales:
 
 ```bash
-php -S 127.0.0.1:8001 backend/laboratorio/servicios/usuarios.php     # servicio de usuarios
-php -S 127.0.0.1:8002 backend/laboratorio/servicios/estados.php      # servicio de estados
+cd backend
+php -S 127.0.0.1:8001 laboratorio/servicios/usuarios.php     # servicio de usuarios
+php -S 127.0.0.1:8002 laboratorio/servicios/estados.php      # servicio de estados
 php artisan serve --port=8000                    # orquestador
 ```
 
 ```bash
-curl -H 'X-Correlation-ID: abc-123' localhost:8000/api/v1/laboratorio/resumen-solicitud/101
-# 200 {"solicitud_id":101,"usuario":{"id":7,"nombre":"Ana"},"estado":"pendiente","correlation_id":"abc-123"}
+curl -H 'X-Correlation-ID: abc-123' localhost:8000/api/resumen-solicitud/101
+# 200 {"success":true,"data":{"solicitud_id":101,"usuario":{"id":7,"nombre":"Ana"},"estado":"pendiente","correlation_id":"abc-123"}}
 ```
 
 - **Timeout:** cada llamada usa `Http::timeout(3)`.
-- **Falla:** si un servicio no responde o devuelve error, se responde `502` con un mensaje controlado (sin
+- **Falla:** si un servicio no responde o devuelve error, se responde `502` con `{success:false, message, correlation_id}` (sin
   trazas) y el detalle queda en `storage/logs/laravel.log` junto con el `correlation_id`. Se prueba deteniendo
   uno de los servicios con `Ctrl+C`.
 - **Correlation ID:** se toma del header `X-Correlation-ID` o se genera un UUID; se reenvía a los servicios y

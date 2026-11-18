@@ -26,7 +26,7 @@ class NormalizacionOrquestacionTest extends TestCase
             '*/estados/101' => Http::response(['solicitud_id' => 101, 'estado' => 'pendiente']),
         ]);
 
-        $this->getJson('/api/v1/laboratorio/resumen-solicitud/101', ['X-Correlation-ID' => 'abc-123'])
+        $this->getJson('/api/resumen-solicitud/101', ['X-Correlation-ID' => 'abc-123'])
             ->assertOk()
             ->assertHeader('X-Correlation-ID', 'abc-123')
             ->assertJsonPath('data.usuario.nombre', 'Ana')

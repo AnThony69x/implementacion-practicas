@@ -211,3 +211,6 @@ Route::prefix('v1')->group(function (): void {
         Route::get('resumen-solicitud/{id}', [OrquestadorController::class, 'resumen'])->whereNumber('id');
     });
 });
+
+// Practica 3.3: ruta literal del enunciado (GET /api/resumen-solicitud/{id}), mismo controlador que laboratorio/
+Route::get('resumen-solicitud/{id}', [OrquestadorController::class, 'resumen'])->whereNumber('id');
