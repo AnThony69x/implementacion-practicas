@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\UsuarioController as AdminUsuarioController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Carrito\CarritoController;
 use App\Http\Controllers\Categorias\CategoriaController;
+use App\Http\Controllers\Laboratorio\AsincronoController;
 use App\Http\Controllers\Laboratorio\NormalizacionController;
 use App\Http\Controllers\Laboratorio\OrquestadorController;
 use App\Http\Controllers\Laboratorio\PedidoLaboratorioController;
@@ -209,6 +210,10 @@ Route::prefix('v1')->group(function (): void {
         Route::post('pedidos', [PedidoLaboratorioController::class, 'store']);
         Route::post('normalizar/pedido/{origen}', [NormalizacionController::class, 'pedido']);
         Route::get('resumen-solicitud/{id}', [OrquestadorController::class, 'resumen'])->whereNumber('id');
+        // Practica 3.1: comunicacion asincrona (productor -> RabbitMQ -> consumidor)
+        Route::post('notificaciones/sincrono', [AsincronoController::class, 'sincrono']);
+        Route::post('notificaciones', [AsincronoController::class, 'encolar']);
+        Route::get('notificaciones/{correlationId}', [AsincronoController::class, 'estado']);
     });
 });
 

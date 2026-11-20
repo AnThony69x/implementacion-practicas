@@ -1,0 +1,226 @@
+{
+  "info": {
+    "name": "Practica 3.1 - Comunicacion asincrona",
+    "description": "Requiere RabbitMQ y el consumidor (php artisan laboratorio:consumir-notificaciones) en ejecucion.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base",
+      "value": "http://127.0.0.1:8000/api/v1/laboratorio"
+    },
+    {
+      "key": "cid_1",
+      "value": ""
+    },
+    {
+      "key": "cid_2",
+      "value": ""
+    },
+    {
+      "key": "cid_3",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "S1 Síncrono -> 200 tras ~3 s",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base}}/notificaciones/sincrono",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pedido_id\": 101,\n  \"estado\": \"LISTO\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"S1 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"duracion >= 3000 ms\", () => pm.expect(pm.response.json().duracion_ms).to.be.at.least(3000));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "A1 Asíncrono pedido 101 -> 202",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base}}/notificaciones",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pedido_id\": 101,\n  \"estado\": \"LISTO\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"A1 202 Accepted\", () => pm.response.to.have.status(202));",
+              "const j = pm.response.json();",
+              "pm.test(\"estado ENCOLADO\", () => pm.expect(j.estado).to.eql(\"ENCOLADO\"));",
+              "pm.collectionVariables.set(\"cid_1\", j.correlation_id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "A2 Asíncrono pedido 102 -> 202",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base}}/notificaciones",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pedido_id\": 102,\n  \"estado\": \"LISTO\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"A2 202 Accepted\", () => pm.response.to.have.status(202));",
+              "const j = pm.response.json();",
+              "pm.test(\"estado ENCOLADO\", () => pm.expect(j.estado).to.eql(\"ENCOLADO\"));",
+              "pm.collectionVariables.set(\"cid_2\", j.correlation_id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "A3 Asíncrono pedido 103 -> 202",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base}}/notificaciones",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pedido_id\": 103,\n  \"estado\": \"LISTO\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"A3 202 Accepted\", () => pm.response.to.have.status(202));",
+              "const j = pm.response.json();",
+              "pm.test(\"estado ENCOLADO\", () => pm.expect(j.estado).to.eql(\"ENCOLADO\"));",
+              "pm.collectionVariables.set(\"cid_3\", j.correlation_id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "E1 Estado del mensaje 1 (PROCESADO cuando el consumidor termine)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base}}/notificaciones/{{cid_1}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"estado válido\", () => pm.expect([\"ENCOLADO\",\"PROCESANDO\",\"PROCESADO\"]).to.include(pm.response.json().estado));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "V1 Mensaje inválido -> 422",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base}}/notificaciones",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"estado\": \"XX\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"V1 422\", () => pm.response.to.have.status(422));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
