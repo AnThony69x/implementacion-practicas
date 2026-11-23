@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Carrito\CarritoController;
 use App\Http\Controllers\Categorias\CategoriaController;
 use App\Http\Controllers\Laboratorio\AsincronoController;
+use App\Http\Controllers\Laboratorio\EnrutamientoController;
 use App\Http\Controllers\Laboratorio\NormalizacionController;
 use App\Http\Controllers\Laboratorio\OrquestadorController;
 use App\Http\Controllers\Laboratorio\PedidoLaboratorioController;
@@ -214,6 +215,9 @@ Route::prefix('v1')->group(function (): void {
         Route::post('notificaciones/sincrono', [AsincronoController::class, 'sincrono']);
         Route::post('notificaciones', [AsincronoController::class, 'encolar']);
         Route::get('notificaciones/{correlationId}', [AsincronoController::class, 'estado']);
+        // Practica 3.2: Content-Based Router + Message Filter (consumidores simulados)
+        Route::post('enrutamiento/mensajes', [EnrutamientoController::class, 'recibir']);
+        Route::get('enrutamiento/consumidores', [EnrutamientoController::class, 'consumidores']);
     });
 });
 

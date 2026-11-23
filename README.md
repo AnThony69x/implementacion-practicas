@@ -69,7 +69,7 @@ Probar el endpoint: importar la colección de Postman (ver [sección 6](#postman
 | Traductor | `backend/app/Aplicacion/Laboratorio/NormalizadorDatos.php` | `desdeFormulario()` y `desdeExterno()` → contrato común |
 | Ruta | `routes/api.php` | `POST /api/v1/laboratorio/normalizar/pedido/{origen}` |
 | Pruebas | `backend/tests/Unitarias/Laboratorio/NormalizadorDatosTest.php` | P1, P2, P3 |
-| Documento | `docs/Practica_2_3_Normalizacion_Anthony_Mejia.docx` | Mapeo, diagrama y evidencias |
+| Documento | `docs/docx/Practica_2_3_Normalizacion_Anthony_Mejia.docx` (PDF: `docs/pdf/Practica_2_3_Normalizacion_Anthony_Mejia.pdf`) | Mapeo, diagrama y evidencias |
 | Guía de la práctica | `docs/Guia/Guia_Individual_Tema_2_3_IS803 (1).docx` | Enunciado original (sin completar) |
 
 ### Práctica 3.3 (orquestación)
@@ -80,7 +80,7 @@ Probar el endpoint: importar la colección de Postman (ver [sección 6](#postman
 | Servicio de estados | `backend/laboratorio/servicios/estados.php` | Puerto 8002, `/estados/{id}` |
 | Configuración | `backend/config/orquestador.php` + `.env` | URLs de los servicios y timeout (3 s) |
 | Orquestador | `backend/app/Http/Controllers/Laboratorio/OrquestadorController.php` | `GET /api/resumen-solicitud/{id}` |
-| Documento | `docs/Practica_3_3_Orquestacion_Anthony_Mejia.docx` | Capturas de Postman y diagrama |
+| Documento | `docs/docx/Practica_3_3_Orquestacion_Anthony_Mejia.docx` (PDF: `docs/pdf/Practica_3_3_Orquestacion_Anthony_Mejia.pdf`) | Capturas de Postman y diagrama |
 
 ### Resto del proyecto (de prácticas anteriores)
 

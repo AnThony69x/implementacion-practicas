@@ -1,0 +1,177 @@
+{
+  "info": {
+    "name": "Practica 3.2 - Enrutamiento (CBR + Message Filter)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000"
+    }
+  ],
+  "item": [
+    {
+      "name": "Caso 1 - pedido_creado -> produccion",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Correlation-ID",
+            "value": "p32-caso1"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": 101,\n  \"tipo\": \"pedido_creado\",\n  \"prioridad\": \"alta\",\n  \"estado\": \"activo\",\n  \"datos\": {\n    \"pedido_id\": 88,\n    \"producto\": \"Torta de chocolate\"\n  }\n}"
+        },
+        "url": "{{base_url}}/api/v1/laboratorio/enrutamiento/mensajes"
+      }
+    },
+    {
+      "name": "Caso 2 - pago_registrado -> pagos",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Correlation-ID",
+            "value": "p32-caso2"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": 102,\n  \"tipo\": \"pago_registrado\",\n  \"prioridad\": \"media\",\n  \"estado\": \"activo\",\n  \"datos\": {\n    \"pedido_id\": 88,\n    \"monto\": 35.5\n  }\n}"
+        },
+        "url": "{{base_url}}/api/v1/laboratorio/enrutamiento/mensajes"
+      }
+    },
+    {
+      "name": "Caso 3 - pedido_cancelado -> cancelaciones",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Correlation-ID",
+            "value": "p32-caso3"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": 103,\n  \"tipo\": \"pedido_cancelado\",\n  \"prioridad\": \"baja\",\n  \"estado\": \"activo\",\n  \"datos\": {\n    \"pedido_id\": 90,\n    \"motivo\": \"Cliente desistio\"\n  }\n}"
+        },
+        "url": "{{base_url}}/api/v1/laboratorio/enrutamiento/mensajes"
+      }
+    },
+    {
+      "name": "Caso 4 - tipo desconocido -> no_enrutables",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Correlation-ID",
+            "value": "p32-caso4"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": 104,\n  \"tipo\": \"resena_publicada\",\n  \"prioridad\": \"media\",\n  \"estado\": \"activo\",\n  \"datos\": {\n    \"pedido_id\": 88\n  }\n}"
+        },
+        "url": "{{base_url}}/api/v1/laboratorio/enrutamiento/mensajes"
+      }
+    },
+    {
+      "name": "Caso 5 - no cumple filtro (estado anulado)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Correlation-ID",
+            "value": "p32-caso5"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": 105,\n  \"tipo\": \"pedido_creado\",\n  \"prioridad\": \"alta\",\n  \"estado\": \"anulado\",\n  \"datos\": {\n    \"pedido_id\": 91\n  }\n}"
+        },
+        "url": "{{base_url}}/api/v1/laboratorio/enrutamiento/mensajes"
+      }
+    },
+    {
+      "name": "Caso 6 - falta campo obligatorio (tipo)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Correlation-ID",
+            "value": "p32-caso6"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": 106,\n  \"prioridad\": \"alta\",\n  \"estado\": \"activo\",\n  \"datos\": {\n    \"pedido_id\": 92\n  }\n}"
+        },
+        "url": "{{base_url}}/api/v1/laboratorio/enrutamiento/mensajes"
+      }
+    },
+    {
+      "name": "Evidencia - bandejas de consumidores",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/api/v1/laboratorio/enrutamiento/consumidores"
+      }
+    }
+  ]
+}
